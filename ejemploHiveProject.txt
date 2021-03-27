@@ -8,7 +8,7 @@ object HiveEnricher extends App {
   Class.forName(driverName)
   val connectionString: String =
     "jdbc:hive2://quickstart.cloudera:10000/bdsf2001_adriest;user=example;password=44444"
-  val  connection = DriverManager.getConnection(connectionString)
+  val connection = DriverManager.getConnection(connectionString)
   val stmt = connection.createStatement()
 
   stmt.execute("set hive.exec.dynamic.partition.mode=nonstrict")
