@@ -1,0 +1,48 @@
+package ca.mcit.bigdata.project4
+
+import java.sql.DriverManager
+
+object HiveEnricher extends App {
+
+  val driverName: String = "org.apache.hive.jdbc.HiveDriver"
+  Class.forName(driverName)
+  val connectionString: String =
+    "jdbc:hive2://quickstart.cloudera:10000/bdsf2001_adriest;user=example;password=44444"
+  val  connection = DriverManager.getConnection(connectionString)
+  val stmt = connection.createStatement()
+
+  stmt.execute("set hive.exec.dynamic.partition.mode=nonstrict")
+  stmt.execute("DROP TABLE IF EXISTS enriched_Trip")
+  stmt.execute(
+    """CREATE table bdsf2001_adriest.enriched_trip (
+      |  trip_id string,
+      |  service_id STRING,
+      |  route_id INT,
+      |  trip_headsign STRING,
+      |  route_long_name STRING,
+      |  route_color STRING,
+      |  date STRING,
+      |  exception_type INT
+      |)
+      |  PARTITIONED BY (wheelchair_accessible BOOLEAN)
+      |  stored as PARQUET""".stripMargin)
+
+  stmt.execute(
+    """INSERT into  enriched_trip
+      | PARTITION(wheelchair_accessible)
+      | SELECT
+      |  t.trip_id,
+      |  t.service_id,
+      |  t.route_id,
+      |  t.trip_headsign,
+      |  r.route_long_name,
+      |  r.route_color,
+      |  c.date,
+      |  c.exception_type,
+      |  CASE  WHEN t.wheelchair_accessible = 1 THEN TRUE ELSE FALSE END
+      |  FROM ext_trips t INNER JOIN ext_routes r on (t.route_id = r.route_id)
+      |  INNER JOIN ext_calendar_dates c on (t.service_id = c.service_id)""".stripMargin)
+
+  stmt.close()
+  connection.close()
+}
